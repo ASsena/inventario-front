@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import api from "../api";
 
 export default function ModalMovimentacao({
   produtosUnicos,
-  estoques,
   depositos,
   onClose,
 }) {
@@ -12,48 +11,76 @@ export default function ModalMovimentacao({
   const [quantidade, setQuantidade] = useState(0);
   const [origemId, setOrigemId] = useState("");
   const [destinoId, setDestinoId] = useState("");
-  const [estoqueId, setEstoqueId] = useState("");
+  const [estoques, setEstoques] = useState([]);
+  const [estoqueSelecionado, setEstoqueSelecionado] = useState("");
 
-  const enviarMovimentacao = async () => {
-  try {
-    const token = localStorage.getItem("token");
-
-    const body = {
-      tipo: tipoMovimentacao,
-      quantidade: Number(quantidade),
+  useEffect(() => {
+    const fetchEstoques = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await api.get("/estoque/all", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setEstoques(res.data);
+      } catch (err) {
+        alert("Erro ao carregar estoques: " + err.message);
+      }
     };
 
-    if (tipoMovimentacao === "TRANSFERENCIA") {
-      body.produtoId = Number(produtoSelecionado);
-      body.origemId = Number(origemId);
-      body.destinoId = Number(destinoId);
-    } else {
-      body.estoqueId = Number(estoqueId);
+    fetchEstoques();
+  }, []);
 
-      // Obter o produtoId automaticamente a partir do estoque selecionado
-      const estoqueSelecionado = estoques.find(
-        (e) => e.id === Number(estoqueId)
-      );
-      if (!estoqueSelecionado) {
-        alert("Estoque inválido selecionado.");
-        return;
+  const enviarMovimentacao = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const body = {
+        tipo: tipoMovimentacao,
+        quantidade: Number(quantidade),
+      };
+
+      if (tipoMovimentacao === "TRANSFERENCIA") {
+        if (!produtoSelecionado || !origemId || !destinoId) {
+          alert("Preencha todos os campos da transferência.");
+          return;
+        }
+
+        body.produtoId = Number(produtoSelecionado);
+        body.origemId = Number(origemId);
+        body.destinoId = Number(destinoId);
+      } else {
+        if (!produtoSelecionado || !estoqueSelecionado) {
+          alert("Preencha o produto e o estoque corretamente.");
+          return;
+        }
+
+        const estoque = estoques.find(
+          (e) =>
+            e.produtoDTO.id === Number(produtoSelecionado) &&
+            e.depositoDTO.id === Number(estoqueSelecionado)
+        );
+
+        if (!estoque) {
+          alert("Estoque inválido.");
+          return;
+        }
+
+        body.estoqueId = estoque.depositoDTO.id;
+        body.produtoId = estoque.produtoDTO.id;
       }
-      body.produtoId = estoqueSelecionado.produtoDTO.id;
+
+      console.log("JSON enviado:", JSON.stringify(body, null, 2));
+
+      await api.post("/movimentacao/cadastrar", body, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      alert("Movimentação realizada com sucesso!");
+      onClose();
+    } catch (err) {
+      alert("Erro ao criar movimentação: " + err.message);
     }
-
-    console.log("JSON enviado:", JSON.stringify(body, null, 2));
-
-    await api.post("/movimentacao/cadastrar", body, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    alert("Movimentação realizada com sucesso!");
-    onClose();
-  } catch (err) {
-    alert("Erro ao criar movimentação: " + err.message);
-  }
-};
-
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -66,7 +93,10 @@ export default function ModalMovimentacao({
             <select
               className="w-full border rounded p-2"
               value={produtoSelecionado}
-              onChange={(e) => setProdutoSelecionado(e.target.value)}
+              onChange={(e) => {
+                setProdutoSelecionado(e.target.value);
+                setEstoqueSelecionado("");
+              }}
             >
               <option value="">Selecione</option>
               {produtosUnicos.map((p) => (
@@ -101,7 +131,7 @@ export default function ModalMovimentacao({
             />
           </div>
 
-          {tipoMovimentacao === "TRANSFERENCIA" && (
+          {tipoMovimentacao === "TRANSFERENCIA" ? (
             <>
               <div>
                 <label className="block font-medium">Origem:</label>
@@ -135,25 +165,22 @@ export default function ModalMovimentacao({
                 </select>
               </div>
             </>
-          )}
-
-          {tipoMovimentacao !== "TRANSFERENCIA" && (
+          ) : (
             <div>
-              <label className="block font-medium">Estoque:</label>
+              <label className="block font-medium">Depósito (Estoque):</label>
               <select
                 className="w-full border rounded p-2"
-                value={estoqueId}
-                onChange={(e) => setEstoqueId(e.target.value)}
+                value={estoqueSelecionado}
+                onChange={(e) => setEstoqueSelecionado(e.target.value)}
               >
                 <option value="">Selecione</option>
                 {estoques
-                .filter((e) => e.produtoDTO.id === Number(produtoSelecionado))
-                .map((e) => (
-                    <option key={e.id} value={e.id}>
-                    {e.depositoDTO.nome}
+                  .filter((e) => e.produtoDTO.id === Number(produtoSelecionado))
+                  .map((e) => (
+                    <option key={e.depositoDTO.id} value={e.depositoDTO.id}>
+                      {e.depositoDTO.nome}
                     </option>
-                ))}
-
+                  ))}
               </select>
             </div>
           )}
