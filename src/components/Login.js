@@ -67,7 +67,7 @@ function Login() {
         </button>
 
         <p className="login_register">
-          <Link to="/cadastrar" style={{ color: '#2563eb', cursor: 'pointer' }}>
+          <Link to="/" style={{ color: '#2563eb', cursor: 'pointer' }}>
             Meu primeiro acesso
           </Link>
         </p>

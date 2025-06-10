@@ -8,12 +8,12 @@ function App() {
   return (
     <Router>
       <nav>
-        <Link to="/cadastrar"></Link>
+        <Link to="/"></Link>
          <Link to="/login"></Link>
       </nav>
 
       <Routes>
-        <Route path="/cadastrar" element={<CadastroPage />}/>
+        <Route path="/" element={<CadastroPage />}/>
         <Route path="/login" element={<Login />}/>
         <Route path="/home" element={<Home />} />
       </Routes>
