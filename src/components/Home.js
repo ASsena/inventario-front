@@ -3,7 +3,8 @@ import api from "../api";
 import "../styles/Tabela.css";
 import ModalMovimentacao from "../components/EnviarMovimentacao";
 import AlertaModal from "./AlertaModal";
-import ProductModal from "../components/ProductModal"; // <-- importe o modal
+import ProductModal from "../components/ProductModalPops"; 
+import { getRelatorio } from "./relatorio";
 
 function ListaEstoque() {
   const [estoques, setEstoques] = useState([]);
@@ -237,7 +238,12 @@ function ListaEstoque() {
           // Você pode recarregar os produtos/estoques aqui se quiser atualizar a lista automaticamente
         }}
       />
-    </div>
+
+      <button className="btn" onClick={getRelatorio}>
+         Relatório
+        </button>
+      </div>
+    
   );
 }
 

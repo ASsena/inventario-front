@@ -4,27 +4,22 @@ import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
-import api from "../api"; // usando seu api.js
-
-interface ProductModalProps {
-  open: boolean;
-  onClose: () => void;
-  onSuccess?: () => void;
-}
+import api from "../api";
+import { getRelatorio } from "./relatorio";
 
 const style = {
-  position: "absolute" as const,
+  position: "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
   width: 400,
   bgcolor: "background.paper",
-  borderRadius: 2,
+  borderRadius: 8,
   boxShadow: 24,
   p: 4,
 };
 
-const ProductModal: React.FC<ProductModalProps> = ({ open, onClose, onSuccess }) => {
+export default function ProductModal({ open, onClose, onSuccess }) {
   const [form, setForm] = useState({
     codigo: "",
     descricao: "",
@@ -34,26 +29,31 @@ const ProductModal: React.FC<ProductModalProps> = ({ open, onClose, onSuccess })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     try {
+     const token = localStorage.getItem('token')
       await api.post("/produtos/create", {
         codigo: form.codigo,
         descricao: form.descricao,
         precoUnitario: Number(form.precoUnitario),
         nome: form.nome,
-      });
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
       setForm({ codigo: "", descricao: "", precoUnitario: "", nome: "" });
       if (onSuccess) onSuccess();
       onClose();
-    } catch (err: any) {
+    } catch (err) {
       setError(err?.response?.data?.message || "Erro ao cadastrar produto.");
     }
     setLoading(false);
@@ -117,8 +117,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ open, onClose, onSuccess })
           </Button>
         </Box>
       </Box>
+      
     </Modal>
   );
-};
-
-export default ProductModal;
+}
