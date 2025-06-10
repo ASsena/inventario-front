@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
-import api from "../api";
+import api from "../api"; // usando seu api.js
 
 interface ProductModalProps {
   open: boolean;
