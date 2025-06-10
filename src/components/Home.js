@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import api from "../api";
 import "../styles/Tabela.css";
-import ModalMovimentacao from "../components/EnviarMovimentacao"; // certifique-se de ter exportado corretamente
+import ModalMovimentacao from "../components/EnviarMovimentacao"; 
+import AlertaModal from "./AlertaModal";// certifique-se de ter exportado corretamente
 
 function ListaEstoque() {
   const [estoques, setEstoques] = useState([]);
@@ -11,8 +12,14 @@ function ListaEstoque() {
   const [error, setError] = useState(null);
   const [filtro, setFiltro] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
+  const [valorTotal, setValorTotal] = useState(null);
+  const [produtosBaixos, setProdutosBaixos] = useState([]);
+  const [mostrarAlerta, setMostrarAlerta] = useState(false);
+
+
 
   useEffect(() => {
+    console.log(produtosBaixos)
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -34,6 +41,12 @@ function ListaEstoque() {
         setDepositos(depositosUnicos);
         setProdutos(produtosUnicos);
         setEstoques(data);
+        const produtosEmBaixa = data.filter(item => item.quantidade < 10);
+        setProdutosBaixos(produtosEmBaixa);
+        if (produtosEmBaixa.length > 0) {
+        setMostrarAlerta(true);
+}
+
         setDepositoSelecionado(depositosUnicos[0]?.id || null);
       } catch (err) {
         setError("Erro ao buscar estoques. " + err.message);
@@ -50,8 +63,16 @@ function ListaEstoque() {
         item.produtoDTO.codigo.includes(filtro))
   );
 
+
+
   return (
     <div className="tabela-container">
+        {mostrarAlerta && (
+      <AlertaModal
+        produtosBaixos={produtosBaixos}
+        onClose={() => setMostrarAlerta(false)}
+      />
+    )}
       <h2 className="titulo">Inventory Management</h2>
 
       {error && <p className="status-bar status-error">{error}</p>}
@@ -74,17 +95,80 @@ function ListaEstoque() {
         />
       </div>
 
-      <div className="botoes-deposito">
-        {depositos.map((dep) => (
-          <button
-            key={dep.id}
-            onClick={() => setDepositoSelecionado(dep.id)}
-            className={`botao-deposito ${dep.id === depositoSelecionado ? "ativo" : ""}`}
-          >
-            {dep.nome}
-          </button>
-        ))}
+     <div className="botoes-deposito" style={{ textAlign: "center", marginBottom: "1rem" }}>
+      {depositos.map((dep) => (
+        <button
+          key={dep.id}
+          onClick={async () => {
+            setDepositoSelecionado(dep.id);
+            try {
+              const token = localStorage.getItem("token");
+              const response = await api.get(`estoque/valor-total/${dep.id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              setValorTotal(response.data); // ou response.data.valor
+            } catch (error) {
+              console.error("Erro ao buscar valor total:", error);
+              setValorTotal("Erro");
+            }
+          }}
+          className={`botao-deposito ${dep.id === depositoSelecionado ? "ativo" : ""}`}
+          style={{
+            margin: "0.25rem",
+            padding: "0.5rem 1rem",
+            borderRadius: "20px",
+            border: "none",
+            backgroundColor: dep.id === depositoSelecionado ? "#0f4d4d" : "#e0e0e0",
+            color: dep.id === depositoSelecionado ? "#fff" : "#333",
+            cursor: "pointer",
+            fontWeight: "bold",
+            transition: "background-color 0.3s",
+          }}
+        >
+          {dep.nome}
+        </button>
+      ))}
+
+      {valorTotal !== null && typeof valorTotal === "number" && (
+        <div
+          style={{
+            marginTop: "1rem",
+            backgroundColor: "#f0f8ff",
+            padding: "1rem",
+            borderRadius: "10px",
+            display: "inline-block",
+            boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
+            fontSize: "1.1rem",
+            fontWeight: "bold",
+            color: "#0f4d4d",
+          }}
+        >
+          Valor total do depósito selecionado: R$ {valorTotal.toFixed(2)}
+        </div>
+      )}
+
+      {valorTotal === "Erro" && (
+        <p style={{ color: "red", marginTop: "1rem" }}>Erro ao buscar valor total.</p>
+      )}
+    </div>
+
+      <div style={{ textAlign: "right", margin: "1rem" }}>
+        <button
+          onClick={() => setMostrarAlerta(true)}
+          style={{
+            backgroundColor: "#e67e22",
+            color: "#fff",
+            padding: "0.5rem 1rem",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          Ver produtos em baixa
+        </button>
       </div>
+
 
       <table className="tabela-produtos">
         <thead>
