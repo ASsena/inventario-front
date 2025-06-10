@@ -239,8 +239,17 @@ function ListaEstoque() {
         }}
       />
 
-      <button className="btn" onClick={getRelatorio}>
-         Relatório
+      <button className="btn" onClick={getRelatorio} style={{
+            backgroundColor: "#0f4d4d",
+            color: "#fff",
+            border: "none",
+            padding: "0.6rem 1.5rem",
+            borderRadius: "9999px",
+            fontSize: "1rem",
+            cursor: "pointer",
+            transition: "0.3s",
+          }}>
+         Gerar relatório
         </button>
       </div>
     
